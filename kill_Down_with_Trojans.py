@@ -24,19 +24,92 @@ def print_tile_data(tile_types, tile_values):
     print("\nTile Values:")
     print(tile_values)
 
+
 def DP(n, H, tile_types, tile_values):
-    # TODO
-    # Placeholder function - implement your logic here
-    # Your code to check whether it is possible to reach the bottom-right
-    # corner without running out of HP should go here.
-    # You should use dynamic programming to solve the problem.
-    # Return True if possible, False otherwise.
+    memo = np.full((n, n, 2, 2), np.nan)
+    if DP_helper(n, tile_types, tile_values, 0, 0, 0, 0, memo) <= H:
+        return True
+    print(memo)
+    return False
 
-    # By defualt we return False
-    # TODO you should change this
-    res = False
-    return res
+def DP_helper(n, tile_types, tile_values, i, j, prev_protect, prev_mult, memo):
+    # base cases
+    
+    
+    # if out of bounds
+    if i == n or j == n:
+        return np.inf
+    
+    # if reached bottom right corner without dying, return true
+    if (i == n and j == n-1) or (i == n-1 and j == n):
+        return 0
+    #check memo
+    if not np.isnan(memo[i][j][prev_protect][prev_mult]):
+        return memo[i][j][prev_protect][prev_mult]
+    
+    res1 = np.inf
+    res2 = np.inf
+    res3 = np.inf
+    res4 = np.inf
 
+    #if landed on protection square
+    if tile_types[i][j] == 2:
+        #protect_status = True
+        #test going right
+        res1 = DP_helper(n, tile_types, tile_values, i, j+1, 1, prev_mult, memo)
+        #test going down
+        res2 = DP_helper(n, tile_types, tile_values, i+1, j, 1, prev_mult, memo)
+        
+    #if landed on multiplier square
+    elif tile_types[i][j] == 3:
+        #test going right
+        res1 = DP_helper(n, tile_types, tile_values, i, j+1, prev_protect, 1, memo)
+        #test going down
+        res2 = DP_helper(n, tile_types, tile_values, i+1, j, prev_protect, 1, memo)
+
+     #if landed on damage tile
+
+    elif tile_types[i][j] == 0:
+        #if protected
+        if prev_protect:
+            #test going right and protect on current tile
+            ans1 = DP_helper(n, tile_types, tile_values, i, j+1, 0, prev_mult, memo)
+            #test going down and protect on current tile
+            ans2 = DP_helper(n, tile_types, tile_values, i+1, j, 0, prev_mult, memo)
+            #test going right and dont use protect
+            ans3 = DP_helper(n, tile_types, tile_values, i, j+1, prev_protect, prev_mult, memo) + tile_values[i][j]
+            #test going down and dont use protect
+            ans4 = DP_helper(n, tile_types, tile_values, i+1, j, prev_protect, prev_mult, memo) + tile_values[i][j]
+        else:
+            #new_health -= tile_values[i][j]
+            #test going right and not protecting
+            ans3 = DP_helper(n, tile_types, tile_values, i, j+1, prev_protect, prev_mult, memo) + tile_values[i][j]
+            #test going down and not protecting
+            ans4 = DP_helper(n, tile_types, tile_values, i+1, j, prev_protect, prev_mult, memo) + tile_values[i][j]
+
+    #if landed on healing tile
+
+    elif tile_types[i][j] == 1:
+        #if have multiplier token
+        if prev_mult:
+            #test going right and multiplier on current tile
+            ans1 = DP_helper(n, tile_types, tile_values, i, j+1, prev_protect, 0, memo) - tile_values[i][j]*2
+            #test going down and multiplier on current tile
+            ans2 = DP_helper(n, tile_types, tile_values, i+1, j, prev_protect, 0, memo) - tile_values[i][j]*2
+            #test going right and dont use multiplier
+            ans3 = DP_helper(n, tile_types, tile_values, i, j+1, prev_protect, prev_mult, memo) - tile_values[i][j]
+            #test going down and dont use multiplier
+            ans4 = DP_helper(n, tile_types, tile_values, i+1, j, prev_protect, prev_mult, memo) - tile_values[i][j]        
+        else:
+            #test going right and not use multiplier
+            ans3 = DP_helper(n, tile_types, tile_values, i, j+1, prev_protect, prev_mult, memo) - tile_values[i][j]
+            #test going down and not use multiplier
+            ans4 = DP_helper(n, tile_types, tile_values, i+1, j, prev_protect, prev_mult, memo) - tile_values[i][j]
+
+    
+    memo[i][j][prev_protect][prev_mult] = min(ans1,ans2,ans3,ans4)
+    return memo[i][j][prev_protect][prev_mult]
+    
 
 
 def write_output_file(output_file_name, result):
